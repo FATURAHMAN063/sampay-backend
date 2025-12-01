@@ -1,40 +1,60 @@
 const express = require("express");
 const router = express.Router();
 
-// Dummy database
+// Dummy database in-memory
 let users = [];
 
-// REGISTER
+// =========================
+//      REGISTER
+// =========================
 router.post("/register", (req, res) => {
-    const { nama, email, password } = req.body;
+    const { nama, email, password, role, phone, address } = req.body;
 
-    // Cek field wajib
-    if (!nama || !email || !password) {
-        return res.status(400).json({ message: "Harap isi semua field!" });
+    // Validasi field wajib
+    if (!nama || !email || !password || !role) {
+        return res.status(400).json({ message: "Harap isi semua field wajib!" });
+    }
+
+    // Validasi role
+    if (!["user", "partner"].includes(role)) {
+        return res.status(400).json({ message: "Role tidak valid!" });
     }
 
     // Cek apakah email sudah ada
-    const existingUser = users.find(u => u.email === email);
+    const existingUser = users.find((u) => u.email === email);
     if (existingUser) {
         return res.status(400).json({ message: "Email sudah terdaftar!" });
     }
 
-    // Simpan user
+    // Bangun objek user sesuai role
     const newUser = {
         id: users.length + 1,
-        nama,
+        nama,              // Untuk user = name, untuk partner = businessName
         email,
-        password
+        password,
+        role,
+        phone: phone || null,
+        address: role === "partner" ? address : null
     };
+
     users.push(newUser);
 
     res.json({
         message: "Registrasi berhasil!",
-        user: { id: newUser.id, nama, email }
+        user: {
+            id: newUser.id,
+            nama: newUser.nama,
+            email: newUser.email,
+            role: newUser.role,
+            phone: newUser.phone,
+            address: newUser.address
+        }
     });
 });
 
-// LOGIN
+// =========================
+//         LOGIN
+// =========================
 router.post("/login", (req, res) => {
     const { email, password } = req.body;
 
@@ -43,20 +63,29 @@ router.post("/login", (req, res) => {
         return res.status(400).json({ message: "Email dan password wajib diisi!" });
     }
 
-    // Cari user
-    const user = users.find(u => u.email === email && u.password === password);
+    // Cari user berdasarkan email & password
+    const user = users.find(
+        (u) => u.email === email && u.password === password
+    );
 
     if (!user) {
         return res.status(401).json({ message: "Email atau password salah!" });
     }
 
-    // Token palsu untuk demo
+    // Token sederhana untuk demo
     const fakeToken = "TOKEN_" + Math.random().toString(36).substring(2);
 
     res.json({
         message: "Login berhasil!",
         token: fakeToken,
-        user: { id: user.id, nama: user.nama, email: user.email }
+        user: {
+            id: user.id,
+            nama: user.nama,
+            email: user.email,
+            role: user.role,
+            phone: user.phone,
+            address: user.address
+        }
     });
 });
 
